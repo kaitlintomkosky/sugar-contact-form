@@ -1,28 +1,38 @@
 export default async function handler(req, res) {
-  // --- CORS headers ---
   res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  // --- Handle preflight ---
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
   try {
-    const sugarCRMUrl = "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture";
+    // Convert JSON body → form-encoded
+    const formBody = new URLSearchParams(req.body).toString();
 
-    const response = await fetch(sugarCRMUrl, {
+    const sugarUrl =
+      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture&json";
+
+    const sugarResponse = await fetch(sugarUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body),
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formBody,
     });
 
-    const data = await response.text();
+    const text = await sugarResponse.text();
 
-    res.status(200).json({ success: true, response: data });
+    return res.status(200).json({
+      success: true,
+      sugarStatus: sugarResponse.status,
+      response: text,
+    });
   } catch (error) {
-    console.error("API error:", error);
-    res.status(500).json({ success: false, error: error.toString() });
+    return res.status(500).json({
+      success: false,
+      error: error.toString(),
+    });
   }
 }
