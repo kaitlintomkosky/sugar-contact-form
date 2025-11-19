@@ -8,13 +8,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Convert JSON body → form-encoded
-    const formBody = new URLSearchParams(req.body).toString();
+    // REQUIRED by Sugar in almost all WebToLead setups
+    const required = {
+      moduleDir: "Leads",
+      json: "1",
+      campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46"
+    };
+
+    // Merge Squarespace form fields with mandatory Sugar fields
+    const merged = { ...required, ...req.body };
+
+    const formBody = new URLSearchParams(merged).toString();
 
     const sugarUrl =
-      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture&json";
+      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture";
 
-    const sugarResponse = await fetch(sugarUrl, {
+    const response = await fetch(sugarUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
@@ -22,11 +31,11 @@ export default async function handler(req, res) {
       body: formBody,
     });
 
-    const text = await sugarResponse.text();
+    const text = await response.text();
 
     return res.status(200).json({
       success: true,
-      sugarStatus: sugarResponse.status,
+      sugarStatus: response.status,
       response: text,
     });
   } catch (error) {
