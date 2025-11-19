@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const formBody = new URLSearchParams(merged).toString();
 
     const sugarUrl =
-      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture";
+      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture";
 
     const response = await fetch(sugarUrl, {
       method: "POST",
