@@ -28,7 +28,6 @@ json: "1",
 campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
 };
 
-```
 // Merge front-end form with required Sugar fields
 const merged = { ...required, ...req.body };
 
@@ -72,7 +71,6 @@ return res.status(200).json({
   sugarStatus: sugarResp.status,
   response: text,
 });
-```
 
 } catch (error) {
 console.error("Server error:", error);
