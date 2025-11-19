@@ -8,7 +8,7 @@ bodyParser: true, // Let Next.js parse JSON or urlencoded
 
 export default async function handler(req, res) {
 // --- CORS headers ---
-res.setHeader("Access-Control-Allow-Origin", "[https://www.yourmoveinready.com](https://www.yourmoveinready.com)");
+res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
 res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
