@@ -35,6 +35,8 @@ for (const [key, value] of params.entries()) {
   formData[key] = value.toString().trim();
 }
 
+  console.log("Parsed formData:", formData);
+
 // --- Required Sugar fields ---
 const required = {
   moduleDir: "Contacts",
@@ -49,6 +51,8 @@ const sugarBody = new URLSearchParams();
 for (const key in merged) {
   if (merged[key] != null) sugarBody.append(key, merged[key]);
 }
+
+  console.log("Sugar payload:", sugarBody.toString());
 
 const sugarUrl =
   "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
