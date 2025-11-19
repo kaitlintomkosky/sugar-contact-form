@@ -1,0 +1,11 @@
+{
+  "name": "sugar-relay",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "vercel dev --listen 3000"
+  },
+  "dependencies": {
+    "multer": "^1.4.5"
+  }
+}
