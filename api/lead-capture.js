@@ -1,64 +1,68 @@
-import formidable from "formidable";
+import { URLSearchParams } from "url";
 
 export const config = {
-  api: {
-    bodyParser: false, // we'll parse manually
-  },
+api: {
+bodyParser: true, // Let Next.js parse JSON or urlencoded
+},
 };
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+// --- CORS headers ---
+res.setHeader("Access-Control-Allow-Origin", "[https://www.yourmoveinready.com](https://www.yourmoveinready.com)");
+res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  console.log("req.method:", req.method);
-console.log("req.headers:", req.headers);
+if (req.method === "OPTIONS") {
+return res.status(200).end();
+}
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
+if (req.method !== "POST") {
+return res.status(405).json({ success: false, error: "Method not allowed" });
+}
 
-  try {
-    const form = formidable({ multiples: false });
+try {
+// --- Required Sugar fields ---
+const required = {
+moduleDir: "Contacts",
+json: "1",
+campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
+};
 
-    form.parse(req, async (err, fields) => {
-      if (err) {
-        console.error("Form parse error:", err);
-        return res.status(500).json({ success: false, error: err.message });
-      }
-  console.log("Parsed fields:", fields);
+```
+// Merge front-end form with required Sugar fields
+const merged = { ...required, ...req.body };
 
-      // REQUIRED fields for Sugar
-      const required = {
-        moduleDir: "Contacts",
-        json: "1",
-        campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
-      };
+// Convert to URLSearchParams for x-www-form-urlencoded POST
+const formBody = new URLSearchParams();
+for (const key in merged) {
+  if (merged[key] != null) formBody.append(key, merged[key]);
+}
 
-      const merged = { ...required, ...fields };
+// --- Sugar endpoint ---
+const sugarUrl = "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
 
-      // Convert to x-www-form-urlencoded
-      const body = new URLSearchParams(merged).toString();
+const sugarResp = await fetch(sugarUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/x-www-form-urlencoded",
+  },
+  body: formBody.toString(),
+});
 
-      const sugarUrl =
-        "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
+const text = await sugarResp.text();
 
-      const sugarRes = await fetch(sugarUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
-      });
+return res.status(200).json({
+  success: true,
+  sugarStatus: sugarResp.status,
+  response: text,
+});
+```
 
-      const text = await sugarRes.text();
-
-      return res.status(200).json({
-        success: true,
-        sugarStatus: sugarRes.status,
-        response: text,
-      });
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.toString() });
-  }
+} catch (error) {
+console.error("Server error:", error);
+return res.status(500).json({
+success: false,
+error: error.toString(),
+});
+}
 }
