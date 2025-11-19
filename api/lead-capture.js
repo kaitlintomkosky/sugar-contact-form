@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   try {
     // REQUIRED by Sugar in almost all WebToLead setups
     const required = {
-      moduleDir: "Leads",
+      moduleDir: "Contacts",
       json: "1",
       campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46"
     };
