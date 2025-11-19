@@ -1,47 +1,57 @@
+import formidable from "formidable";
+
+export const config = {
+  api: {
+    bodyParser: false, // we'll parse manually
+  },
+};
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
 
   try {
-    // REQUIRED by Sugar in almost all WebToLead setups
-    const required = {
-      moduleDir: "Contacts",
-      json: "1",
-      campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46"
-    };
+    const form = formidable({ multiples: false });
 
-    // Merge Squarespace form fields with mandatory Sugar fields
-    const merged = { ...required, ...req.body };
+    form.parse(req, async (err, fields) => {
+      if (err) return res.status(500).json({ success: false, error: err.message });
 
-    const formBody = new URLSearchParams(merged).toString();
+      // REQUIRED fields for Sugar
+      const required = {
+        moduleDir: "Contacts",
+        json: "1",
+        campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
+      };
 
-    const sugarUrl =
-      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
+      const merged = { ...required, ...fields };
 
-    const response = await fetch(sugarUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formBody,
-    });
+      // Convert to x-www-form-urlencoded
+      const body = new URLSearchParams(merged).toString();
 
-    const text = await response.text();
+      const sugarUrl =
+        "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
 
-    return res.status(200).json({
-      success: true,
-      sugarStatus: response.status,
-      response: text,
+      const sugarRes = await fetch(sugarUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      });
+
+      const text = await sugarRes.text();
+
+      return res.status(200).json({
+        success: true,
+        sugarStatus: sugarRes.status,
+        response: text,
+      });
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.toString(),
-    });
+    return res.status(500).json({ success: false, error: error.toString() });
   }
 }
