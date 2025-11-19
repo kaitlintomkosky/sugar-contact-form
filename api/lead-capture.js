@@ -1,41 +1,60 @@
-export const config = { api: { bodyParser: false } };
+export const config = {
+api: {
+bodyParser: true, // Accept JSON from frontend
+},
+};
 
 export default async function handler(req, res) {
-  // --- CORS headers ---
-  res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+// --- CORS headers ---
+res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
+res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST") return res.status(405).end("Method not allowed");
+if (req.method === "OPTIONS") return res.status(200).end();
+if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
 
-  try {
-    // --- Read body into a buffer ---
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const bodyBuffer = Buffer.concat(chunks);
+try {
+const payload = req.body;
 
-    const sugarUrl =
-      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
-
-    const sugarResp = await fetch(sugarUrl, {
-      method: "POST",
-      headers: {
-        ...req.headers,
-        host: "moveinready.sugarondemand.com", // sometimes required
-      },
-      body: bodyBuffer,
-    });
-
-    const text = await sugarResp.text();
-
-    return res.status(200).json({
-      success: true,
-      sugarStatus: sugarResp.status,
-      response: text,
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.toString() });
-  }
+// --- Required Sugar fields ---
+const required = {
+  req_id: "first_name;last_name;phone_home;email1;",
+  campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
+  redirect_url: "https://www.yourmoveinready.com/",
+  redirectRequestType: "GET",
+  redirectIncludeParams: "0",
+  email_opt_in: "on",
 };
+
+// --- Merge JSON with required fields ---
+const merged = { ...required, ...payload };
+
+// --- Create FormData for Sugar (browser-style multipart) ---
+const formData = new FormData();
+for (const key in merged) {
+  if (merged[key] != null) formData.append(key, merged[key]);
+}
+
+// --- Send POST to Sugar ---
+const sugarResp = await fetch(
+  "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json",
+  {
+    method: "POST",
+    body: formData, // Let fetch handle multipart boundary
+  }
+);
+
+const text = await sugarResp.text();
+
+// Sugar returns JS/HTML snippet, not JSON
+return res.status(200).json({
+  success: true,
+  sugarStatus: sugarResp.status,
+  response: text,
+  debugBody: merged,
+});
+
+} catch (error) {
+return res.status(500).json({ success: false, error: error.toString() });
+}
+}
