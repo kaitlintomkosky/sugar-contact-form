@@ -25,8 +25,7 @@ export default async function handler(req, res) {
 
     const required = {
       moduleDir: "Contacts",
-      json: "1",
-      //campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
+      json: "1"
     };
 
     const merged = { ...required, ...req.body };
