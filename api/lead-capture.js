@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sugarCRMUrl = "YOUR_SUGAR_ENDPOINT_HERE";
+    const sugarCRMUrl = "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToLeadCapture";
 
     const response = await fetch(sugarCRMUrl, {
       method: "POST",
