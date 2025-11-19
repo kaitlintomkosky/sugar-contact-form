@@ -2,7 +2,7 @@ import { URLSearchParams } from "url";
 
 export const config = {
 api: {
-bodyParser: true, // Let Next.js parse JSON or URL-encoded automatically
+bodyParser: false, // We parse manually since it's a form post
 },
 };
 
@@ -21,31 +21,42 @@ return res.status(405).json({ success: false, error: "Method not allowed", error
 }
 
 try {
-// --- Required Sugar fields ---
-const required = {
-moduleDir: "Contacts",
-json: "1",
-campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
-};
+// --- Parse incoming x-www-form-urlencoded body manually ---
+let bodyText = "";
+await new Promise((resolve, reject) => {
+req.on("data", (chunk) => (bodyText += chunk));
+req.on("end", resolve);
+req.on("error", reject);
+});
 
-// Merge front-end form with required Sugar fields
-const merged = { ...required, ...req.body };
-
-// Convert to URLSearchParams for x-www-form-urlencoded POST
-const formBody = new URLSearchParams();
-for (const key in merged) {
-  if (merged[key] != null) formBody.append(key, merged[key]);
+const params = new URLSearchParams(bodyText);
+const formData = {};
+for (const [key, value] of params.entries()) {
+  formData[key] = value.toString().trim();
 }
 
-// --- Sugar endpoint ---
-const sugarUrl = "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
+// --- Required Sugar fields ---
+const required = {
+  moduleDir: "Contacts",
+  json: "1",
+  campaign_id: "0d0947f0-d3d1-11ec-b0cd-06f2b4fb7f46",
+};
+
+const merged = { ...required, ...formData };
+
+// --- Prepare payload for Sugar ---
+const sugarBody = new URLSearchParams();
+for (const key in merged) {
+  if (merged[key] != null) sugarBody.append(key, merged[key]);
+}
+
+const sugarUrl =
+  "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
 
 const sugarResp = await fetch(sugarUrl, {
   method: "POST",
-  headers: {
-    "Content-Type": "application/x-www-form-urlencoded",
-  },
-  body: formBody.toString(),
+  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+  body: sugarBody.toString(),
 });
 
 const text = await sugarResp.text();
@@ -54,10 +65,10 @@ let sugarJson = null;
 try {
   sugarJson = JSON.parse(text);
 } catch (e) {
-  // Sugar returned non-JSON response (e.g., maintenance page)
-  sugarJson = null;
+  sugarJson = null; // Sugar returned non-JSON (maintenance page, etc.)
 }
 
+// --- Handle Sugar errors ---
 if (sugarJson && sugarJson.success === false && Array.isArray(sugarJson.errors)) {
   return res.status(200).json({
     success: false,
