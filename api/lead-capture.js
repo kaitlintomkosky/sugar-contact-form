@@ -1,44 +1,27 @@
-import multer from "multer";
-
-export const config = {
-  api: {
-    bodyParser: false, // important for multer
-  },
-};
-
-const upload = multer();
+export const config = { api: { bodyParser: false } };
 
 export default async function handler(req, res) {
+  // --- CORS headers ---
   res.setHeader("Access-Control-Allow-Origin", "https://www.yourmoveinready.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    // Preflight request
+    return res.status(200).end();
+  }
 
-  if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
+  if (req.method !== "POST") return res.status(405).end("Method not allowed");
 
   try {
-    // multer parses the form and puts fields in req.body
-    await new Promise((resolve, reject) => {
-      upload.none()(req, {}, (err) => (err ? reject(err) : resolve()));
-    });
+    const sugarUrl =
+      "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
 
-    const required = {
-      moduleDir: "Contacts",
-      json: "1"
-    };
-
-    const merged = { ...required, ...req.body };
-
-    const sugarBody = new URLSearchParams();
-    for (const key in merged) sugarBody.append(key, merged[key]);
-
-    const sugarUrl = "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
-
+    // Forward the request directly (multipart/form-data)
     const sugarResp = await fetch(sugarUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: sugarBody.toString(),
+      headers: req.headers, // keeps the original headers, including Content-Type
+      body: req, // pipe the request body as-is
     });
 
     const text = await sugarResp.text();
@@ -47,10 +30,9 @@ export default async function handler(req, res) {
       success: true,
       sugarStatus: sugarResp.status,
       response: text,
-      debugBody: merged, // optional for debugging
     });
-  } catch (error) {
-    console.error("Server error:", error);
-    return res.status(500).json({ success: false, error: error.toString() });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.toString() });
   }
 }
