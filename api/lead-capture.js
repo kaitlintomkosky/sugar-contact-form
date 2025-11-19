@@ -6,22 +6,25 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    // Preflight request
-    return res.status(200).end();
-  }
-
+  if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).end("Method not allowed");
 
   try {
+    // --- Read body into a buffer ---
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const bodyBuffer = Buffer.concat(chunks);
+
     const sugarUrl =
       "https://moveinready.sugarondemand.com/index.php?entryPoint=WebToContactCapture&json";
 
-    // Forward the request directly (multipart/form-data)
     const sugarResp = await fetch(sugarUrl, {
       method: "POST",
-      headers: req.headers, // keeps the original headers, including Content-Type
-      body: req, // pipe the request body as-is
+      headers: {
+        ...req.headers,
+        host: "moveinready.sugarondemand.com", // sometimes required
+      },
+      body: bodyBuffer,
     });
 
     const text = await sugarResp.text();
@@ -35,4 +38,4 @@ export default async function handler(req, res) {
     console.error(err);
     return res.status(500).json({ success: false, error: err.toString() });
   }
-}
+};
