@@ -25,6 +25,7 @@ const BOT_FIELDS = [
 for (const field of BOT_FIELDS) {
   if (req.body[field]) {
     console.log('1');
+    res.status(405).json({ success: false, error: "1" });
     //return res.status(200).json({ success: true });
   }
 }
@@ -35,11 +36,13 @@ const referer = req.headers['referer'];
 
 if (!ua || !origin || !referer) {
   console.log('2');
+  res.status(405).json({ success: false, error: "2" });
   //return res.status(200).json({ success: true });
 }
 
 if (!origin.includes('yourmoveinready.com')) {
   console.log('3');
+  res.status(405).json({ success: false, error: "3" });
   //return res.status(200).json({ success: true });
 }
 
@@ -47,6 +50,7 @@ const spamRegex = /(https?:\/\/|www\.|crypto|seo|backlinks)/i;
 for (const val of Object.values(req.body)) {
   if (typeof val === 'string' && spamRegex.test(val)) {
     console.log('4');
+    res.status(405).json({ success: false, error: "4" });
     //return res.status(200).json({ success: true });
   }
 }
