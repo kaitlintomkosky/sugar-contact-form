@@ -14,7 +14,7 @@ if (req.method === "OPTIONS") return res.status(200).end();
 if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
 
 // ===== SPAM PROTECTION =====
-/*const BOT_FIELDS = [
+const BOT_FIELDS = [
   'company',
   'website',
   'url',
@@ -24,7 +24,8 @@ if (req.method !== "POST") return res.status(405).json({ success: false, error: 
 
 for (const field of BOT_FIELDS) {
   if (req.body[field]) {
-    return res.status(200).json({ success: true });
+    console.log('1');
+    //return res.status(200).json({ success: true });
   }
 }
   
@@ -33,19 +34,22 @@ const origin = req.headers['origin'];
 const referer = req.headers['referer'];
 
 if (!ua || !origin || !referer) {
-  return res.status(200).json({ success: true });
+  console.log('2');
+  //return res.status(200).json({ success: true });
 }
 
 if (!origin.includes('yourmoveinready.com')) {
-  return res.status(200).json({ success: true });
+  console.log('3');
+  //return res.status(200).json({ success: true });
 }
 
 const spamRegex = /(https?:\/\/|www\.|crypto|seo|backlinks)/i;
 for (const val of Object.values(req.body)) {
   if (typeof val === 'string' && spamRegex.test(val)) {
-    return res.status(200).json({ success: true });
+    console.log('4');
+    //return res.status(200).json({ success: true });
   }
-}*/
+}
 //
 
 try {
