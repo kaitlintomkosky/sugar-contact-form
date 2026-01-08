@@ -13,6 +13,41 @@ res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 if (req.method === "OPTIONS") return res.status(200).end();
 if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
 
+// ===== SPAM PROTECTION =====
+const BOT_FIELDS = [
+  'company',
+  'website',
+  'url',
+  'fax',
+  'company_name'
+];
+
+for (const field of BOT_FIELDS) {
+  if (req.body[field]) {
+    return res.status(200).json({ success: true });
+  }
+}
+  
+const ua = req.headers['user-agent'];
+const origin = req.headers['origin'];
+const referer = req.headers['referer'];
+
+if (!ua || !origin || !referer) {
+  return res.status(200).json({ success: true });
+}
+
+if (!origin.includes('yourmoveinready.com')) {
+  return res.status(200).json({ success: true });
+}
+
+const spamRegex = /(https?:\/\/|www\.|crypto|seo|backlinks)/i;
+for (const val of Object.values(req.body)) {
+  if (typeof val === 'string' && spamRegex.test(val)) {
+    return res.status(200).json({ success: true });
+  }
+}
+//
+
 try {
 const payload = req.body;
 
