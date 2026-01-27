@@ -39,6 +39,8 @@ const GIBBERISH_FIELDS = [
 
 for (const field of GIBBERISH_FIELDS) {
   if (looksLikeGibberish(req.body[field])) {
+    console.log(field);
+    console.log('gibberish');
     return res.status(200).json({ success: true });
   }
 }
@@ -49,6 +51,7 @@ const values = Object.values(req.body)
 if (values.length) {
   const uniqueRatio = new Set(values).size / values.length;
   if (uniqueRatio < 0.5) {
+    console.log('ratio');
     return res.status(200).json({ success: true });
   }
 }
@@ -57,6 +60,7 @@ const email = req.body.email1;
 if (email) {
   const [local] = email.split('@');
   if (local.length > 20 && !/[a-z]/i.test(local.replace(/\./g, ''))) {
+    console.log('email');
     return res.status(200).json({ success: true });
   }
 }
