@@ -14,6 +14,53 @@ if (req.method === "OPTIONS") return res.status(200).end();
 if (req.method !== "POST") return res.status(405).json({ success: false, error: "Method not allowed" });
 
 // ===== SPAM PROTECTION =====
+
+  // ===== ADVANCED SPAM HEURISTICS =====
+function looksLikeGibberish(str) {
+  if (!str || typeof str !== 'string') return false;
+  if (str.length > 25 && !str.includes(' ')) return true;
+
+  const vowels = (str.match(/[aeiou]/gi) || []).length;
+  if (str.length > 10 && vowels / str.length < 0.25) return true;
+
+  if (/^[A-Za-z0-9+/=]{15,}$/.test(str)) return true;
+  return false;
+}
+
+const GIBBERISH_FIELDS = [
+  'first_name',
+  'last_name',
+  'assistant',
+  'title',
+  'comments_c',
+  'primary_address_street',
+  'primary_address_city'
+];
+
+for (const field of GIBBERISH_FIELDS) {
+  if (looksLikeGibberish(req.body[field])) {
+    return res.status(200).json({ success: true });
+  }
+}
+
+const values = Object.values(req.body)
+  .filter(v => typeof v === 'string' && v.length > 5);
+
+if (values.length) {
+  const uniqueRatio = new Set(values).size / values.length;
+  if (uniqueRatio < 0.5) {
+    return res.status(200).json({ success: true });
+  }
+}
+
+const email = req.body.email1;
+if (email) {
+  const [local] = email.split('@');
+  if (local.length > 20 && !/[a-z]/i.test(local.replace(/\./g, ''))) {
+    return res.status(200).json({ success: true });
+  }
+}
+  
 const BOT_FIELDS = [
   'company',
   'website',
