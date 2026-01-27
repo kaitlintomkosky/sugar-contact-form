@@ -15,56 +15,81 @@ if (req.method !== "POST") return res.status(405).json({ success: false, error: 
 
 // ===== SPAM PROTECTION =====
 
-  // ===== ADVANCED SPAM HEURISTICS =====
-function looksLikeGibberish(str) {
+// ---------- Helper: gibberish detection (field-aware) ----------
+function looksLikeGibberish(str, field) {
   if (!str || typeof str !== 'string') return false;
-  if (str.length > 25 && !str.includes(' ')) return true;
 
-  const vowels = (str.match(/[aeiou]/gi) || []).length;
-  if (str.length > 10 && vowels / str.length < 0.25) return true;
+  const clean = str.trim();
 
-  if (/^[A-Za-z0-9+/=]{15,}$/.test(str)) return true;
+  // Ignore very short strings entirely
+  if (clean.length < 6) return false;
+
+  // Ignore numeric-heavy values (phones, zips, apt numbers)
+  if (/^[0-9\s\-#]+$/.test(clean)) return false;
+
+  // Base64 / hash-like blobs
+  if (clean.length > 20 && /^[A-Za-z0-9+/=]+$/.test(clean)) {
+    return true;
+  }
+
+  // Low vowel ratio ONLY for name / comment-like fields
+  if (['first_name', 'last_name', 'assistant', 'title', 'comments_c'].includes(field)) {
+    const vowels = (clean.match(/[aeiou]/gi) || []).length;
+    if (vowels / clean.length < 0.2) return true;
+  }
+
   return false;
 }
 
+// ---------- 1. Gibberish checks (NO address fields) ----------
 const GIBBERISH_FIELDS = [
   'first_name',
   'last_name',
   'assistant',
   'title',
-  'comments_c',
-  'primary_address_street',
-  'primary_address_city'
+  'comments_c'
 ];
 
 for (const field of GIBBERISH_FIELDS) {
-  if (looksLikeGibberish(req.body[field])) {
-    console.log(field);
-    console.log('gibberish');
-    //return res.status(200).json({ success: true });
+  if (looksLikeGibberish(req.body[field], field)) {
+    console.log('blocked: gibberish', field);
+    return res.status(200).json({ success: true });
   }
 }
 
-const values = Object.values(req.body)
-  .filter(v => typeof v === 'string' && v.length > 5);
+// ---------- 2. Similarity check (ONLY free-text fields) ----------
+const SIMILARITY_FIELDS = [
+  'comments_c',
+  'assistant',
+  'title'
+];
 
-if (values.length) {
-  const uniqueRatio = new Set(values).size / values.length;
+const similarityValues = SIMILARITY_FIELDS
+  .map(f => req.body[f])
+  .filter(v => typeof v === 'string' && v.length > 10);
+
+if (similarityValues.length >= 2) {
+  const uniqueRatio = new Set(similarityValues).size / similarityValues.length;
   if (uniqueRatio < 0.5) {
-    console.log('ratio');
-    //return res.status(200).json({ success: true });
+    console.log('blocked: similarity');
+    return res.status(200).json({ success: true });
   }
 }
 
+// ---------- 3. Email realism check (safe) ----------
 const email = req.body.email1;
 if (email) {
   const [local] = email.split('@');
-  if (local.length > 20 && !/[a-z]/i.test(local.replace(/\./g, ''))) {
-    console.log('email');
-    //return res.status(200).json({ success: true });
+  if (
+    local.length > 25 &&
+    /^[^aeiou]+$/i.test(local.replace(/\./g, ''))
+  ) {
+    console.log('blocked: email');
+    return res.status(200).json({ success: true });
   }
 }
-  
+
+// ---------- 4. Bot honeypot fields ----------
 const BOT_FIELDS = [
   'company',
   'website',
@@ -75,25 +100,27 @@ const BOT_FIELDS = [
 
 for (const field of BOT_FIELDS) {
   if (req.body[field]) {
-    //res.status(405).json({ success: false, error: "1" });
+    console.log('blocked: bot field', field);
     return res.status(200).json({ success: true });
   }
 }
-  
+
+// ---------- 5. Header / origin validation ----------
 const ua = req.headers['user-agent'];
 const origin = req.headers['origin'];
 const referer = req.headers['referer'];
 
 if (!ua || !origin || !referer) {
-  //res.status(405).json({ success: false, error: "2" });
+  console.log('blocked: missing headers');
   return res.status(200).json({ success: true });
 }
 
 if (!origin.includes('yourmoveinready.com')) {
-  //res.status(405).json({ success: false, error: "3" });
+  console.log('blocked: bad origin', origin);
   return res.status(200).json({ success: true });
 }
-//
+
+// ===== END SPAM PROTECTION =====
 
 try {
 const payload = req.body;
