@@ -15,31 +15,34 @@ if (req.method !== "POST") return res.status(405).json({ success: false, error: 
 
 // ===== SPAM PROTECTION =====
 
-// ---------- Helper: gibberish detection (field-aware) ----------
-function looksLikeGibberish(str, field) {
+function looksLikeGibberish(str) {
   if (!str || typeof str !== 'string') return false;
 
-  const clean = str.trim();
+  const trimmed = str.trim();
 
-  // Ignore very short strings entirely
-  if (clean.length < 6) return false;
-
-  // Ignore numeric-heavy values (phones, zips, apt numbers)
-  if (/^[0-9\s\-#]+$/.test(clean)) return false;
-
-  // Base64 / hash-like blobs
-  if (clean.length > 20 && /^[A-Za-z0-9+/=]+$/.test(clean)) {
-    return true;
+  // Allow common human name punctuation
+  if (/^[A-Za-z '&.\-]+$/.test(trimmed)) {
+    return false;
   }
 
-  // Low vowel ratio ONLY for name / comment-like fields
-  if (['first_name', 'last_name', 'assistant', 'title', 'comments_c'].includes(field)) {
-    const vowels = (clean.match(/[aeiou]/gi) || []).length;
-    if (vowels / clean.length < 0.2) return true;
-  }
+  // Long strings with no spaces (but not names)
+  if (trimmed.length > 30 && !trimmed.includes(' ')) return true;
+
+  // Remove non-letters for vowel analysis
+  const lettersOnly = trimmed.replace(/[^a-z]/gi, '');
+
+  // Skip very short or name-like inputs
+  if (lettersOnly.length < 8) return false;
+
+  const vowels = (lettersOnly.match(/[aeiou]/gi) || []).length;
+  if (vowels / lettersOnly.length < 0.2) return true;
+
+  // Encoded / machine-like strings
+  if (/^[A-Za-z0-9+/=]{20,}$/.test(trimmed)) return true;
 
   return false;
 }
+
 
 // ---------- 1. Gibberish checks (NO address fields) ----------
 const GIBBERISH_FIELDS = [
