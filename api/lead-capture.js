@@ -51,7 +51,6 @@ export default async function handler(req, res) {
   }
 
   // ===== SPAM PROTECTION =====
-
   // 1. Gibberish detection (human-visible)
   const GIBBERISH_FIELDS = [
     "first_name",
