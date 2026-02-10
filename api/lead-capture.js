@@ -16,6 +16,8 @@ export default async function handler(req, res) {
 
   // ===== HELPERS =====
   function blockWithFields(fields = []) {
+    console.log('blockWithFields');
+    console.log(fields);
     return res.status(200).json({
       success: false,
       errors: fields,
