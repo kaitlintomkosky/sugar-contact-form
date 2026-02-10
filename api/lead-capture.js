@@ -60,25 +60,6 @@ for (const field of GIBBERISH_FIELDS) {
   }
 }
 
-// ---------- 2. Similarity check (ONLY free-text fields) ----------
-const SIMILARITY_FIELDS = [
-  'comments_c',
-  'assistant',
-  'title'
-];
-
-const similarityValues = SIMILARITY_FIELDS
-  .map(f => req.body[f])
-  .filter(v => typeof v === 'string' && v.length > 10);
-
-if (similarityValues.length >= 2) {
-  const uniqueRatio = new Set(similarityValues).size / similarityValues.length;
-  if (uniqueRatio < 0.5) {
-    console.log('blocked: similarity');
-    return res.status(200).json({ success: true });
-  }
-}
-
 // ---------- 3. Email realism check (safe) ----------
 const email = req.body.email1;
 if (email) {
