@@ -63,7 +63,7 @@ export default async function handler(req, res) {
 
   for (const field of GIBBERISH_FIELDS) {
     if (looksLikeGibberish(req.body[field])) {
-      console.log("Blocked submission:", {
+      console.log("Blocked submission!:", {
         field,
         fullBody: req.body,
         timestamp: new Date().toISOString()
