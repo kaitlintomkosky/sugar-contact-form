@@ -64,7 +64,7 @@ export default async function handler(req, res) {
       //return blockWithFields([field]);
       return res.status(200).json({
       success: false,
-      errors: field,
+      errors: [field],
     });
     }
   }
