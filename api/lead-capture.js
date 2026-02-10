@@ -16,8 +16,11 @@ export default async function handler(req, res) {
 
   // ===== HELPERS =====
   function blockWithFields(fields = []) {
-    console.log('blockWithFields');
-    console.log(fields);
+    console.log("Blocked submission:", {
+        fields,
+        fullBody: req.body,
+        timestamp: new Date().toISOString()
+    });
     return res.status(200).json({
       success: false,
       errors: fields,
@@ -61,15 +64,7 @@ export default async function handler(req, res) {
   for (const field of GIBBERISH_FIELDS) {
     if (looksLikeGibberish(req.body[field])) {
       console.log("blocked: gibberish", field);
-      //return blockWithFields([field]);
-res.status(200).json({
-    success: false,
-    errors: [field],
-    blocked_test: true
-});
-res.end(); // force the serverless function to finish immediately
-return;   // stop further code
-      console.log('after return');
+      return blockWithFields([field]);
     }
   }
 
