@@ -62,11 +62,13 @@ export default async function handler(req, res) {
     if (looksLikeGibberish(req.body[field])) {
       console.log("blocked: gibberish", field);
       //return blockWithFields([field]);
-      res.status(200).send(JSON.stringify({
-        success: false,
-        errors: [field]
-    }));
-    return;
+res.status(200).json({
+    success: false,
+    errors: [field],
+    blocked_test: true
+});
+res.end(); // force the serverless function to finish immediately
+return;   // stop further code
       console.log('after return');
     }
   }
