@@ -61,7 +61,11 @@ export default async function handler(req, res) {
   for (const field of GIBBERISH_FIELDS) {
     if (looksLikeGibberish(req.body[field])) {
       console.log("blocked: gibberish", field);
-      return blockWithFields([field]);
+      //return blockWithFields([field]);
+      return res.status(200).json({
+      success: false,
+      errors: field,
+    });
     }
   }
 
