@@ -66,6 +66,7 @@ export default async function handler(req, res) {
       success: false,
       errors: [field],
     });
+      console.log('after return');
     }
   }
 
