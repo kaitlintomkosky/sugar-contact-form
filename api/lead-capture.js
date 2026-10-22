@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       redirectRequestType: "GET",
       redirectIncludeParams: "0",
       email_opt_in: "on",
-      //team_id: "5d71d99a-ce55-11f1-b44a-0ebaddcaf017",
+      team_id: "5d71d99a-ce55-11f1-b44a-0ebaddcaf017",
     };
 
     const merged = { ...required, ...payload };
